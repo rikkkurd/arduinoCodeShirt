@@ -1,10 +1,10 @@
 #include <SPI.h>
-//#include <wire.h>
-#include <WSWire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_LSM9DS0.h>
-#include <Adafruit_Simple_AHRS.h>
-#include <PacketSerial.h>
+//#include <wire.h> // don't use the regular i2c library, this will freeze the arduino with unstable connections due to missing time-out function
+#include <WSWire.h> // use this I2C library instead
+#include <Adafruit_Sensor.h> // stable readings accross sensors
+#include <Adafruit_LSM9DS0.h> // library to communicate with the orientation sensors (accelelerometer, gyroscope, and magnetometer)
+#include <Adafruit_Simple_AHRS.h> //convert raw sensor data to orientation data yaw pitch heading
+//#include <PacketSerial.h> // to send serial packets, not currently used in this sketch
 
 
 // Create LSM9DS0 board instance.
@@ -40,7 +40,16 @@ int selectPin = 12; // NX3L1T3157 switch is used to select sensor 1 or sensor 2 
 int values[8];
 
 
-PacketSerial serial;
+//PacketSerial serial;
+/*
+we connect 2 sensors with the same I2C address to the same arduino, to prevent communication clashes a switch connected to selectPin is used to 
+switch the dataline connection (SDA) from one sensor to the other, this means only one sensor at a time is connected to the SDA pin on the arduino(or other microcontroller)
+in the setup we inititialize each sensor by setting the selectPin Low for the first sensor, 
+then initialize and after this we set the selectPin HIGH to initialize the second sensor.
+furthermore we initialize Serial communication on Serial 1 instead of standart Serial.begin to communicate with the bluetooth chip on pin RX/TX instead of the usb cable
+
+
+*/
 
 void setup()
 {
@@ -97,7 +106,7 @@ delay(250);
     values[1] = orientation.roll;
     values[2] = orientation.pitch;
     values[3] = orientation.heading;
-    
+    // send values to bluetooth chip
     Serial1.print(values[0]);
    Serial1.print(",");
    Serial1.print(values[1]);
@@ -106,22 +115,7 @@ delay(250);
      Serial1.print(",");
    Serial1.print(values[3]);
       
-  
-
-
-
-    //    /* 'orientation' should have valid .roll and .pitch fields */
-    //    Serial.print(F("Orientation:, "));
-    //    Serial.print(orientation.roll);
-    //    Serial.print(F(", "));
-    //    Serial.print(orientation.pitch);
-    //    Serial.print(F(","));
-    //    Serial.print(orientation.heading);
-    //    Serial.println(F(""));
-    //
-
-
- }
+   }
 delay(250);
      digitalWrite(selectPin, LOW); // connect sensor 1 via the NX3L1T3157 switch chip
 delay(250);
@@ -140,26 +134,11 @@ delay(250);
      Serial1.print(",");
    Serial1.print(values[7]);
 
+
+// this function prints the sensor values also on the usb port, for debugging purposes
   debugger();
 
-
-    //    /* 'orientation' should have valid .roll and .pitch fields */
-    //    Serial.print(F("Orientation:, "));
-    //    Serial.print(orientation.roll);
-    //    Serial.print(F(", "));
-    //    Serial.print(orientation.pitch);
-    //    Serial.print(F(","));
-    //    Serial.print(orientation.heading);
-    //    Serial.println(F(""));
-    //
-
-
- }
-  
-  //   uint8_t myPacket[] = { values[0], values[1], values[2], values [3]};
-//   serial.send(myPacket, 4);
-  
-  
+ 
 }
 
 void debugger(){
